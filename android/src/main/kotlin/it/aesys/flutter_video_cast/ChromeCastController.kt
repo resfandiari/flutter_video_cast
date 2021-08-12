@@ -51,50 +51,6 @@ class ChromeCastController(
             val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
             sessionManager?.currentCastSession?.remoteMediaClient?.addProgressListener(this, 1000)
             request?.addStatusListener(this)
-
-
-            /*
-            val url = args["url"] as? String
-
-            val meta = MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC)
-            meta.putString(MediaMetadata.KEY_TITLE, args["title"] as? String)
-            meta.putString(MediaMetadata.KEY_ARTIST, args["artist"] as? String)
-            (args["image-url"] as? String).let{imageUrl ->
-                meta.addImage(WebImage(Uri.parse(imageUrl)))
-            }
-
-            val media = MediaInfo.Builder(url).setMetadata(meta).build()
-            val options = MediaLoadOptions.Builder().build()
-            val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
-            request?.addStatusListener(this)
-             */
-
-            /*
-            val url = args["url"] as? String
-
-            val meta = MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC)
-            meta.putString(MediaMetadata.KEY_TITLE, args["title"] as? String)
-            meta.putString(MediaMetadata.KEY_SUBTITLE, args["subTitle"] as? String)
-            meta.putString(MediaMetadata.KEY_ARTIST, args["artist"] as? String)
-            (args["imgUrl"] as? String).let{imgUrl ->
-                meta.addImage(WebImage(Uri.parse(imgUrl)))
-            }
-
-            val media = MediaInfo.Builder(url).setMetadata(meta).build()
-            val options = MediaLoadOptions.Builder().build()
-            val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
-
-            request?.addStatusListener(this)
-             */
-
-            /*
-            val url = args["url"] as? String
-            val media = MediaInfo.Builder(url).build()
-            val options = MediaLoadOptions.Builder().build()
-            val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
-            sessionManager?.currentCastSession?.remoteMediaClient?.addProgressListener(this, 1000)
-            request?.addStatusListener(this)
-             */
         }
     }
 
