@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_video_cast/src/chrome_cast/chrome_cast_event.dart';
 import 'package:flutter_video_cast/src/chrome_cast/chrome_cast_platform.dart';
+import 'package:flutter_video_cast/src/chrome_cast/video_progress_model.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 /// An implementation of [ChromeCastPlatform] that uses [MethodChannel] to communicate with the native code.
@@ -24,10 +25,15 @@ class MethodChannelChromeCast extends ChromeCastPlatform {
   // It is a `broadcast` because multiple controllers will connect to
   // different stream views of this Controller.
   final _eventStreamController = StreamController<ChromeCastEvent>.broadcast();
+  final _progressStreamController = StreamController<VideoProgress>.broadcast();
 
   // Returns a filtered view of the events in the _controller, by id.
   Stream<ChromeCastEvent> _events(int? id) =>
       _eventStreamController.stream.where((event) => event.id == id);
+
+  @override
+  Stream<VideoProgress> get progressStreamEvents =>
+      _progressStreamController.stream;
 
   @override
   Future<void> init(int id) {
@@ -70,9 +76,19 @@ class MethodChannelChromeCast extends ChromeCastPlatform {
     return _events(id).whereType<RequestDidFailEvent>();
   }
 
-  @override
-  Future<void> loadMedia(String url, {required int id}) {
-    final Map<String, dynamic> args = {'url': url};
+  Future<void> loadMedia(
+    String url, {
+    required int id,
+    String? title,
+    String? subTitle,
+    String imgUrl = '',
+  }) {
+    final Map<String, dynamic> args = {
+      'url': url,
+      'title': title,
+      'subTitle': subTitle,
+      "imgUrl": imgUrl
+    };
     return channel(id)!.invokeMethod<void>('chromeCast#loadMedia', args);
   }
 
@@ -157,6 +173,11 @@ class MethodChannelChromeCast extends ChromeCastPlatform {
       case 'chromeCast#requestDidFail':
         _eventStreamController
             .add(RequestDidFailEvent(id, call.arguments['error']));
+        break;
+      case 'chromeCast#getVideoProgress':
+        _progressStreamController.sink.add(
+          VideoProgress.fromJson(call.arguments.cast<String, String>()),
+        );
         break;
       default:
         throw MissingPluginException();

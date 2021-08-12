@@ -26,8 +26,19 @@ class ChromeCastController {
   }
 
   /// Load a new media by providing an [url].
-  Future<void> loadMedia(String url) {
-    return _chromeCastPlatform.loadMedia(url, id: id);
+  Future<void> loadMedia(
+    String url, {
+    String? title,
+    String? subTitle,
+    String image = '',
+  }) {
+    return _chromeCastPlatform.loadMedia(
+      url,
+      title: title,
+      subTitle: subTitle,
+      imgUrl: image,
+      id: id,
+    );
   }
 
   /// Plays the video playback.
@@ -45,6 +56,10 @@ class ChromeCastController {
   /// If [relative] is set to true sets the video position to an [interval] from the current position.
   Future<void> seek({bool relative = false, double interval = 10.0}) {
     return _chromeCastPlatform.seek(relative, interval, id: id);
+  }
+
+  Stream<VideoProgress> getVideoProgress() {
+    return _chromeCastPlatform.progressStreamEvents;
   }
 
   /// Set volume 0-1

@@ -8,7 +8,7 @@
 import Flutter
 import GoogleCast
 
-class ChromeCastController: NSObject, FlutterPlatformView {
+class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientListener {
 
     // MARK: - Internal properties
 
@@ -59,6 +59,10 @@ class ChromeCastController: NSObject, FlutterPlatformView {
         )
     }
 
+    Stream<VideoProgress> getVideoProgress() {
+       return _chromeCastPlatform.progressStreamEvents;
+    }
+
     // MARK: - Flutter methods handling
 
     private func setMethodCallHandler() {
@@ -104,6 +108,12 @@ class ChromeCastController: NSObject, FlutterPlatformView {
         case "chromeCast#removeSessionListener":
             removeSessionListener()
             result(nil)
+        case "chromeCast#position":
+            result(position())
+        case "chromeCast#endSession":
+            sessionManager.currentCastSession?.remoteMediaClient?.remove(self)
+            sessionManager.endSession()
+            result(nil)
         default:
             result(nil)
             break
@@ -122,6 +132,19 @@ class ChromeCastController: NSObject, FlutterPlatformView {
         if let request = sessionManager.currentCastSession?.remoteMediaClient?.loadMedia(mediaInformation) {
             request.delegate = self
         }
+        sessionManager.currentCastSession?.remoteMediaClient?.add(self)
+    }
+
+    public func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
+        if let mediaStatusPosition = mediaStatus?.streamPosition, let duration = mediaStatus?.mediaInformation?.streamDuration {
+             channel.invokeMethod("chromeCast#getVideoProgress", arguments:
+                 [
+                    "position": String(mediaStatusPosition * 1000),
+                    "duration": String(duration * 1000)
+                 ]
+             )
+        }
+
     }
 
     private func play() {
@@ -171,6 +194,10 @@ class ChromeCastController: NSObject, FlutterPlatformView {
 
     private func removeSessionListener() {
         sessionManager.remove(self)
+    }
+
+    private func position() -> Int {
+        return Int(sessionManager.currentCastSession?.remoteMediaClient?.approximateStreamPosition() ?? 0) * 1000
     }
 }
 

@@ -1,16 +1,20 @@
 package it.aesys.flutter_video_cast
 
 import android.content.Context
+import android.net.Uri
 import android.view.ContextThemeWrapper
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadOptions
+import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.Session
 import com.google.android.gms.cast.framework.SessionManagerListener
+import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.common.api.PendingResult
 import com.google.android.gms.common.api.Status
+import com.google.android.gms.common.images.WebImage
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -20,7 +24,7 @@ class ChromeCastController(
         messenger: BinaryMessenger,
         viewId: Int,
         context: Context?
-) : PlatformView, MethodChannel.MethodCallHandler, SessionManagerListener<Session>, PendingResult.StatusListener {
+) : PlatformView, MethodChannel.MethodCallHandler, SessionManagerListener<Session>, PendingResult.StatusListener, RemoteMediaClient.ProgressListener {
     private val channel = MethodChannel(messenger, "flutter_video_cast/chromeCast_$viewId")
     private val chromeCastButton = MediaRouteButton(ContextThemeWrapper(context, R.style.Theme_AppCompat_NoActionBar))
     private val sessionManager = CastContext.getSharedInstance()?.sessionManager
@@ -33,10 +37,64 @@ class ChromeCastController(
     private fun loadMedia(args: Any?) {
         if (args is Map<*, *>) {
             val url = args["url"] as? String
-            val media = MediaInfo.Builder(url).build()
+
+            val meta = MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC)
+            meta.putString(MediaMetadata.KEY_TITLE, args["title"] as? String)
+            meta.putString(MediaMetadata.KEY_SUBTITLE, args["subTitle"] as? String)
+            meta.putString(MediaMetadata.KEY_STUDIO, args["subTitle"] as? String)
+            (args["imgUrl"] as? String).let{imageUrl ->
+                meta.addImage(WebImage(Uri.parse(imageUrl)))
+            }
+
+            val media = MediaInfo.Builder(url).setMetadata(meta).build()
+            val options = MediaLoadOptions.Builder().build()
+            val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
+            sessionManager?.currentCastSession?.remoteMediaClient?.addProgressListener(this, 1000)
+            request?.addStatusListener(this)
+
+
+            /*
+            val url = args["url"] as? String
+
+            val meta = MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC)
+            meta.putString(MediaMetadata.KEY_TITLE, args["title"] as? String)
+            meta.putString(MediaMetadata.KEY_ARTIST, args["artist"] as? String)
+            (args["image-url"] as? String).let{imageUrl ->
+                meta.addImage(WebImage(Uri.parse(imageUrl)))
+            }
+
+            val media = MediaInfo.Builder(url).setMetadata(meta).build()
             val options = MediaLoadOptions.Builder().build()
             val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
             request?.addStatusListener(this)
+             */
+
+            /*
+            val url = args["url"] as? String
+
+            val meta = MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC)
+            meta.putString(MediaMetadata.KEY_TITLE, args["title"] as? String)
+            meta.putString(MediaMetadata.KEY_SUBTITLE, args["subTitle"] as? String)
+            meta.putString(MediaMetadata.KEY_ARTIST, args["artist"] as? String)
+            (args["imgUrl"] as? String).let{imgUrl ->
+                meta.addImage(WebImage(Uri.parse(imgUrl)))
+            }
+
+            val media = MediaInfo.Builder(url).setMetadata(meta).build()
+            val options = MediaLoadOptions.Builder().build()
+            val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
+
+            request?.addStatusListener(this)
+             */
+
+            /*
+            val url = args["url"] as? String
+            val media = MediaInfo.Builder(url).build()
+            val options = MediaLoadOptions.Builder().build()
+            val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
+            sessionManager?.currentCastSession?.remoteMediaClient?.addProgressListener(this, 1000)
+            request?.addStatusListener(this)
+             */
         }
     }
 
@@ -82,7 +140,10 @@ class ChromeCastController(
 
     private fun isConnected() = sessionManager?.currentCastSession?.isConnected ?: false
 
-    private fun endSession() = sessionManager?.endCurrentSession(true)
+    private fun endSession() {
+        sessionManager?.currentCastSession?.remoteMediaClient?.removeProgressListener(this)
+        sessionManager?.endCurrentSession(true)
+    }
 
     private fun position() = sessionManager?.currentCastSession?.remoteMediaClient?.approximateStreamPosition ?: 0
 
@@ -195,5 +256,12 @@ class ChromeCastController(
         if (status?.isSuccess == true) {
             channel.invokeMethod("chromeCast#requestDidComplete", null)
         }
+    }
+
+    override fun onProgressUpdated(progress: Long, duration: Long) {
+        val data = HashMap<String, String>()
+        data[DURATION] = duration.toString()
+        data[PROGRESS] = progress.toString()
+        channel.invokeMethod("chromeCast#getVideoProgress", data)
     }
 }

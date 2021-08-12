@@ -24,6 +24,7 @@ class CastSample extends StatefulWidget {
 
 class _CastSampleState extends State<CastSample> {
   late ChromeCastController _controller;
+
   AppState _state = AppState.idle;
   bool? _playing = false;
 
@@ -174,8 +175,11 @@ class _CastSampleState extends State<CastSample> {
   Future<void> _onSessionStarted() async {
     setState(() => _state = AppState.connected);
     await _controller.loadMedia(
-      'http://demo.unified-streaming.com/video/tears-of-steel/tears-of-steel.ism/.m3u8',
-    );
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        title: "Test title",
+        subTitle: "Test subtitle",
+        image:
+            "https://intenseplugin.com/wp-content/uploads/2016/09/big_buck_bunny.jpg");
   }
 
   Future<void> _onSessionEnded() async {
