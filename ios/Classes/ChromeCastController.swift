@@ -59,10 +59,6 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
         )
     }
 
-    Stream<VideoProgress> getVideoProgress() {
-       return _chromeCastPlatform.progressStreamEvents;
-    }
-
     // MARK: - Flutter methods handling
 
     private func setMethodCallHandler() {
