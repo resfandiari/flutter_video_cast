@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_video_cast/src/chrome_cast/chrome_cast_event.dart';
 import 'package:flutter_video_cast/src/chrome_cast/chrome_cast_platform.dart';
-import 'package:flutter_video_cast/src/chrome_cast/video_progress_model.dart';
+import 'package:flutter_video_cast/src/chrome_cast/model/video_progress_model.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 /// An implementation of [ChromeCastPlatform] that uses [MethodChannel] to communicate with the native code.
@@ -82,12 +82,14 @@ class MethodChannelChromeCast extends ChromeCastPlatform {
     String? title,
     String? subTitle,
     String imgUrl = '',
+    String? subtitles,
   }) {
     final Map<String, dynamic> args = {
       'url': url,
       'title': title,
       'subTitle': subTitle,
-      "imgUrl": imgUrl
+      "imgUrl": imgUrl,
+      "subtitles": subtitles,
     };
     return channel(id)!.invokeMethod<void>('chromeCast#loadMedia', args);
   }
@@ -100,6 +102,19 @@ class MethodChannelChromeCast extends ChromeCastPlatform {
   @override
   Future<void> pause({required int id}) {
     return channel(id)!.invokeMethod<void>('chromeCast#pause');
+  }
+
+  @override
+  Future<void> changeSubtitle(int subtitleId, {required int id}) {
+    final Map<String, dynamic> args = {
+      'id': subtitleId,
+    };
+    return channel(id)!.invokeMethod<void>('chromeCast#changeSubtitle', args);
+  }
+
+  @override
+  Future<void> turnOffSubtitles({required int id}) {
+    return channel(id)!.invokeMethod<void>('chromeCast#turnOffSubtitle');
   }
 
   @override
