@@ -31,12 +31,16 @@ class ChromeCastController {
     String? title,
     String? subTitle,
     String image = '',
+    List<VideoSubtitle>? subtitles,
   }) {
     return _chromeCastPlatform.loadMedia(
       url,
       title: title,
       subTitle: subTitle,
       imgUrl: image,
+      subtitles: subtitles != null
+          ? jsonEncode(subtitles.map((e) => e.toJson()).toList())
+          : null,
       id: id,
     );
   }
@@ -49,6 +53,16 @@ class ChromeCastController {
   /// Pauses the video playback.
   Future<void> pause() {
     return _chromeCastPlatform.pause(id: id);
+  }
+
+  /// Change current video subtitle by id.
+  Future<void> changeSubtitle(int subtitleId) {
+    return _chromeCastPlatform.changeSubtitle(subtitleId, id: id);
+  }
+
+  /// Turn off current video subtitle
+  Future<void> turnOffSubtitles() {
+    return _chromeCastPlatform.turnOffSubtitles(id: id);
   }
 
   /// If [relative] is set to false sets the video position to an [interval] from the start.

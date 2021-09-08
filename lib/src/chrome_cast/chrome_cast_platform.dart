@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_video_cast/src/chrome_cast/chrome_cast_event.dart';
 import 'package:flutter_video_cast/src/chrome_cast/method_channel_chrome_cast.dart';
-import 'package:flutter_video_cast/src/chrome_cast/video_progress_model.dart';
+import 'package:flutter_video_cast/src/chrome_cast/model/video_progress_model.dart';
 
 /// The interface that platform-specific implementations of `flutter_video_cast` must extend.
 abstract class ChromeCastPlatform {
@@ -60,6 +60,7 @@ abstract class ChromeCastPlatform {
     String? title,
     String? subTitle,
     String imgUrl = '',
+    String? subtitles,
   }) {
     throw UnimplementedError('loadMedia() has not been implemented.');
   }
@@ -72,6 +73,16 @@ abstract class ChromeCastPlatform {
   /// Pauses the video playback.
   Future<void> pause({required int id}) {
     throw UnimplementedError('pause() has not been implemented.');
+  }
+
+  /// Change current video subtitle by id.
+  Future<void> changeSubtitle(int subtitleId, {required int id}) {
+    throw UnimplementedError('changeSubtitle() has not been implemented.');
+  }
+
+  /// Turn off current video subtitle
+  Future<void> turnOffSubtitles({required int id}) {
+    throw UnimplementedError('turnOffSubtitles() has not been implemented.');
   }
 
   /// If [relative] is set to false sets the video position to an [interval] from the start.

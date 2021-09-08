@@ -3,10 +3,13 @@ package it.aesys.flutter_video_cast
 import android.content.Context
 import android.net.Uri
 import android.view.ContextThemeWrapper
+import android.graphics.Color
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadOptions
 import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.cast.MediaTrack
+import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.Session
@@ -19,6 +22,9 @@ import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
+import com.google.gson.Gson
+
+import it.aesys.flutter_video_cast.models.SubtitleModel
 
 class ChromeCastController(
         messenger: BinaryMessenger,
@@ -37,7 +43,27 @@ class ChromeCastController(
     private fun loadMedia(args: Any?) {
         if (args is Map<*, *>) {
             val url = args["url"] as? String
+            val subtitlesJson = args["subtitles"] as? String
+            /// keep all tracks like subittles and audio tracks
+            val tracks: MutableList<MediaTrack> = ArrayList<MediaTrack>()
 
+            if (subtitlesJson != null) {
+                val gson = Gson()
+                val subtitles = gson.fromJson(subtitlesJson, Array<SubtitleModel>::class.java).asList();
+                
+                for (subtitle in subtitles) {
+                   val mediTrackSubtitle = MediaTrack.Builder(subtitle.id.toLong(), MediaTrack.TYPE_TEXT)
+                   .setName(subtitle.name)
+                   .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
+                   .setContentId(subtitle.url)
+                   /* language is required for subtitle type but optional otherwise */
+                   .setLanguage(subtitle.language)
+                   .build() 
+
+                   tracks.add(mediTrackSubtitle)
+                }
+            } 
+            
             val meta = MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC)
             meta.putString(MediaMetadata.KEY_TITLE, args["title"] as? String)
             meta.putString(MediaMetadata.KEY_SUBTITLE, args["subTitle"] as? String)
@@ -46,10 +72,11 @@ class ChromeCastController(
                 meta.addImage(WebImage(Uri.parse(imageUrl)))
             }
 
-            val media = MediaInfo.Builder(url).setMetadata(meta).build()
+            val media = MediaInfo.Builder(url).setMetadata(meta).setMediaTracks(tracks).build()
             val options = MediaLoadOptions.Builder().build()
             val request = sessionManager?.currentCastSession?.remoteMediaClient?.load(media, options)
             sessionManager?.currentCastSession?.remoteMediaClient?.addProgressListener(this, 1000)
+
             request?.addStatusListener(this)
         }
     }
@@ -75,6 +102,22 @@ class ChromeCastController(
             val request = sessionManager?.currentCastSession?.remoteMediaClient?.seek(interval?.toLong() ?: 0)
             request?.addStatusListener(this)
         }
+    }
+
+    private fun changeSubtitle(args: Any?) {
+        if (args is Map<*, *>) {
+            val id = args["id"] as? Int 
+            val request = sessionManager?.currentCastSession?.remoteMediaClient?.setActiveMediaTracks(longArrayOf(id!!.toLong()))
+            val subtitleStyle = TextTrackStyle()
+            subtitleStyle.setBackgroundColor(Color.argb(76, 0, 0, 0))
+            sessionManager?.currentCastSession?.remoteMediaClient?.setTextTrackStyle(subtitleStyle)
+            request?.addStatusListener(this)    
+        }
+    }
+
+    private fun turnOffSubtitle() {
+        val request = sessionManager?.currentCastSession?.remoteMediaClient?.setActiveMediaTracks(LongArray(0))
+        request?.addStatusListener(this)
     }
 
     private fun setVolume(args: Any?) {
@@ -157,6 +200,14 @@ class ChromeCastController(
             }
             "chromeCast#position" -> result.success(position())
             "chromeCast#duration" -> result.success(duration())
+            "chromeCast#changeSubtitle" -> {
+                changeSubtitle(call.arguments)
+                result.success(null)
+            }
+            "chromeCast#turnOffSubtitle" -> {
+                turnOffSubtitle()
+                result.success(null)
+            }
             "chromeCast#addSessionListener" -> {
                 addSessionListener()
                 result.success(null)
@@ -169,7 +220,6 @@ class ChromeCastController(
     }
 
     // SessionManagerListener
-
     override fun onSessionStarted(p0: Session?, p1: String?) {
         channel.invokeMethod("chromeCast#didStartSession", null)
     }
@@ -207,7 +257,6 @@ class ChromeCastController(
     }
 
     // PendingResult.StatusListener
-
     override fun onComplete(status: Status?) {
         if (status?.isSuccess == true) {
             channel.invokeMethod("chromeCast#requestDidComplete", null)

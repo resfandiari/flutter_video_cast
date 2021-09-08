@@ -107,13 +107,12 @@ class _CastSampleState extends State<CastSample> {
           },
         ),
         Text(_time()),
-        /*
-        //End session
+
+        //End subtitles
         _RoundIconButton(
           icon: Icons.stop,
-          onPressed: () => _controller.endSession(),
+          onPressed: () => _controller.turnOffSubtitles(),
         ),
-         */
       ],
     );
   }
@@ -174,12 +173,27 @@ class _CastSampleState extends State<CastSample> {
 
   Future<void> _onSessionStarted() async {
     setState(() => _state = AppState.connected);
+
+    // Subtitles test
+    final videoSubtitle = VideoSubtitle(
+      id: 1,
+      name: "Português",
+      url:
+          "https://s3.sa-east-1.amazonaws.com/content.finclass.com/vod/subtitles/Finclass/20_Howard/FINCLASS_20_AULA_02.vtt",
+      language: "pt-BR",
+    );
+
+    List<VideoSubtitle> videoSubtitles = [];
+    videoSubtitles.add(videoSubtitle);
+
     await _controller.loadMedia(
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        title: "Test title",
-        subTitle: "Test subtitle",
-        image:
-            "https://intenseplugin.com/wp-content/uploads/2016/09/big_buck_bunny.jpg");
+      "https://d1mmb4c1iqc2nn.cloudfront.net/mp4/FINCLASS_20_AULA_02_Mp4_Avc_Aac_16x9_1280x720p_24Hz_8.5Mbps_qvbr.mp4",
+      title: "Pensamento de Segundo Nível",
+      subTitle: "Howard Marks",
+      image:
+          "https://content.finclass.com/finclasses/Howard/Thumbs+aulas/Aula-2.jpg",
+      subtitles: videoSubtitles,
+    );
   }
 
   Future<void> _onSessionEnded() async {
@@ -191,6 +205,12 @@ class _CastSampleState extends State<CastSample> {
 
   Future<void> _onRequestCompleted() async {
     final playing = await _controller.isPlaying();
+
+    if (_state != AppState.mediaLoaded) {
+      // Starts with subtitle case it has
+      await _controller.changeSubtitle(1);
+    }
+
     setState(() {
       _state = AppState.mediaLoaded;
       _playing = playing;
