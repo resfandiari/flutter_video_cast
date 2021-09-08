@@ -95,6 +95,14 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
         case "chromeCast#isConnected":
             result(isConnected())
             break
+        case "chromeCast#changeSubtitle":
+            changeSubtitle(args: call.arguments)
+            result(nil) 
+            break
+        case "chromeCast#turnOffSubtitle":
+            turnOffSubtitle()
+            result(nil) 
+            break       
         case "chromeCast#isPlaying":
             result(isPlaying())
             break
@@ -120,10 +128,33 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
         guard
             let args = args as? [String: Any],
             let url = args["url"] as? String,
-            let subtitles = args["subtitles"] as? String,
             let mediaUrl = URL(string: url) else {
                 print("Invalid URL")
                 return
+        }
+
+        let subtitlesJson = args["subtitles"] as? String
+        var tracks = [GCKMediaTrack]()
+
+        if subtitlesJson != nil {
+          let decoder = JSONDecoder()  
+          let jsonData = Data(subtitlesJson!.utf8)
+          do {
+            let subtitles = try decoder.decode([SubtitleModel].self, from: jsonData)
+            for subtitle in subtitles {
+                let captionsTrack = GCKMediaTrack.init(identifier: subtitle.id,
+                                       contentIdentifier: subtitle.url,
+                                       contentType: "text/vtt",
+                                       type: GCKMediaTrackType.text,
+                                       textSubtype: GCKMediaTextTrackSubtype.captions,
+                                       name: subtitle.name,
+                                       languageCode: subtitle.language,
+                                       customData: nil) 
+                tracks.append(captionsTrack)
+            }
+          } catch {
+            print(error.localizedDescription)
+          }
         }
 
         let metadata = GCKMediaMetadata()
@@ -138,17 +169,6 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
         }
 
         let mediaInfoBuilder = GCKMediaInformationBuilder.init(contentURL: mediaUrl)
-
-        let captionsTrack = GCKMediaTrack.init(identifier: 1,
-                                       contentIdentifier: "https://s3.sa-east-1.amazonaws.com/content.finclass.com/vod/subtitles/Finclass/20_Howard/FINCLASS_20_AULA_02.vtt",
-                                       contentType: "text/vtt",
-                                       type: GCKMediaTrackType.text,
-                                       textSubtype: GCKMediaTextTrackSubtype.captions,
-                                       name: "Português",
-                                       languageCode: "pt-BR",
-                                       customData: nil)
-
-        let tracks = [captionsTrack]
 
         mediaInfoBuilder.metadata = metadata;
         mediaInfoBuilder.mediaTracks = tracks;
@@ -200,6 +220,25 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
         }
     }
 
+    private func changeSubtitle(args: Any?) {
+        guard
+          let args = args as? [String: Any],
+          let id = args["id"] as? NSNumber else {
+                return
+        }
+
+      sessionManager.currentSession?.remoteMediaClient?.setActiveTrackIDs([id])  
+
+      let textTrackStyle = GCKMediaTextTrackStyle.createDefault()
+      textTrackStyle.backgroundColor = GCKColor.init(cssString: "#0000004D")
+      let styleChangeRequest = sessionManager.currentSession?.remoteMediaClient?.setTextTrackStyle(textTrackStyle)
+      styleChangeRequest?.delegate = self
+    }
+
+    private func turnOffSubtitle() {
+      sessionManager.currentSession?.remoteMediaClient?.setActiveTrackIDs([])
+    }
+
     private func stop() {
         if let request = sessionManager.currentCastSession?.remoteMediaClient?.stop() {
             request.delegate = self
@@ -244,8 +283,6 @@ extension ChromeCastController: GCKSessionManagerListener {
 extension ChromeCastController: GCKRequestDelegate {
     func requestDidComplete(_ request: GCKRequest) {
         channel.invokeMethod("chromeCast#requestDidComplete", arguments: nil)
-        // Testing subtitle
-        sessionManager.currentSession?.remoteMediaClient?.setActiveTrackIDs([1])
     }
 
     func request(_ request: GCKRequest, didFailWithError error: GCKError) {

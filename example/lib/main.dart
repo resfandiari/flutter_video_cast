@@ -209,6 +209,7 @@ class _CastSampleState extends State<CastSample> {
     if (_state != AppState.mediaLoaded) {
       // Starts with subtitle case it has
       await _controller.changeSubtitle(1);
+      //await _controller.seek(interval: 60.toDouble());
     }
 
     setState(() {
