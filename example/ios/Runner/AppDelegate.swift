@@ -14,6 +14,7 @@ import GoogleCast
         GeneratedPluginRegistrant.register(with: self)
         let criteria = GCKDiscoveryCriteria(applicationID: kReceiverAppID)
         let options = GCKCastOptions(discoveryCriteria: criteria)
+        options.physicalVolumeButtonsWillControlDeviceVolume = true
         GCKCastContext.setSharedInstanceWith(options)
         GCKCastContext.sharedInstance().useDefaultExpandedMediaControls = true
         GCKLogger.sharedInstance().delegate = self

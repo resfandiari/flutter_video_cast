@@ -14,6 +14,7 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
 
     private let channel: FlutterMethodChannel
     private let chromeCastButton: GCKUICastButton
+    private let volumeController: GCKUIDeviceVolumeController
     private let sessionManager = GCKCastContext.sharedInstance().sessionManager
 
     // MARK: - Init
@@ -26,6 +27,7 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
     ) {
         self.channel = FlutterMethodChannel(name: "flutter_video_cast/chromeCast_\(viewId)", binaryMessenger: registrar.messenger())
         self.chromeCastButton = GCKUICastButton(frame: frame)
+        self.volumeController = GCKUIDeviceVolumeController()
         super.init()
         self.configure(arguments: args)
     }
@@ -87,6 +89,10 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
         case "chromeCast#seek":
             seek(args: call.arguments)
             result(nil)
+            break
+        case "chromeCast#setVolume":
+            setVolume(args: call.arguments)
+            result(nil) 
             break
         case "chromeCast#stop":
             stop()
@@ -220,6 +226,16 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
         }
     }
 
+    private func setVolume(args: Any?) {
+        guard 
+         let args = args as? [String: Any],
+         let volume = args["volume"] as? Float else {
+                return
+        }
+       
+        self.volumeController.setVolume(volume)
+    }
+
     private func changeSubtitle(args: Any?) {
         guard
           let args = args as? [String: Any],
@@ -236,7 +252,9 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
     }
 
     private func turnOffSubtitle() {
-      sessionManager.currentSession?.remoteMediaClient?.setActiveTrackIDs([])
+       if let request =  sessionManager.currentSession?.remoteMediaClient?.setActiveTrackIDs([]) {
+            request.delegate = self
+       }
     }
 
     private func stop() {

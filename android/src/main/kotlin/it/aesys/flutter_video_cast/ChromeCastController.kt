@@ -123,8 +123,8 @@ class ChromeCastController(
     private fun setVolume(args: Any?) {
         if (args is Map<*, *>) {
             val volume = args["volume"] as? Double
-            val request = sessionManager?.currentCastSession?.remoteMediaClient?.setStreamVolume(volume ?: 0.0)
-            request?.addStatusListener(this)
+            val request = sessionManager?.currentCastSession?.setVolume(volume ?: 0.0)
+            //request?.addStatusListener(this)
         }
     }
 
