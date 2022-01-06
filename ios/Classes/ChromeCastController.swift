@@ -148,15 +148,18 @@ class ChromeCastController: NSObject, FlutterPlatformView, GCKRemoteMediaClientL
           do {
             let subtitles = try decoder.decode([SubtitleModel].self, from: jsonData)
             for subtitle in subtitles {
-                guard let captionsTrack = GCKMediaTrack!.init(identifier: subtitle.id,
+                guard let captionsTrack = GCKMediaTrack.init(identifier: subtitle.id,
                                        contentIdentifier: subtitle.url,
                                        contentType: "text/vtt",
                                        type: GCKMediaTrackType.text,
                                        textSubtype: GCKMediaTextTrackSubtype.captions,
                                        name: subtitle.name,
                                        languageCode: subtitle.language,
-                                       customData: nil) 
-                tracks.append(captionsTrack!)
+                                       customData: nil) else {
+                            print("Couldn't load media track")
+                            return
+                } 
+                tracks.append(captionsTrack)
             }
           } catch {
             print(error.localizedDescription)
